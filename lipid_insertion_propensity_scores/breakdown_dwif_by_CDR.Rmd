@@ -1,0 +1,209 @@
+---
+title: "HVTN133 - Calculate MPEx hydrophobicity scores per CDR regions for antibody sequences"
+author: "Hélène Kirshner modified from Kevin Wiehe's perl script breakdown_dwif_by_CDR.pl, Duke Human Vaccine Institute"
+date: "2023/03/21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Input files are amino acid FASTA files for antibody sequences, ANARCI results for all sequences, and MPEx results parsed using the "parse_MPEx.pl" script.
+
+```{r}
+box_dir <- "~/Library/CloudStorage/Box-Box"
+HVTN133_dir <- "~/Library/CloudStorage/Box-Box/DHVI_Bioinformatics_Team/HVTN133"
+project_dir <- paste0(HVTN133_dir, "/Hydrophobicity")
+scripts_dir <- paste0(project_dir, "/scripts")
+data_dir <- paste0(project_dir, "/data")
+results_dir <- paste0(project_dir, "/results")
+results_dir_1 <- paste0(results_dir, "/1_curated_FASTAs")
+results_dir_2 <- paste0(results_dir, "/2_ANARCI")
+results_dir_4 <- paste0(results_dir, "/4_parse_MPEx")
+results_dir_6 <- paste0(results_dir, "/6_breakdown_dwif_by_CDR")
+```
+
+INPUT: Ab ID + ANARCI model + MPEx results
+
+FUNCTION 1: generate calculation for 3 CDR region for a specific chain
+FUNCTION 2: generate calculation for 6 CDR regions for a specific Ab
+
+# Install packages
+
+```{r, eval=FALSE}
+install.packages("seqinr")
+```
+
+# Functions
+
+## Function to read FASTA into a dataframe
+
+```{r}
+FastaToDF <- function (filename) {
+  #read fasta file
+  file1 <- readLines(filename)
+  #find the line with the sequence name by grepping >
+  location <- which((stringr::str_sub(file1,1,1))==">")
+  #start an empty vector to collect name and sequence 
+  name=c()
+  sequence =c()
+  #number of genes= number of loops
+  #extract name first
+  for ( i in 1:length(location)){
+    name_line = location[i]
+    name1 = file1[name_line]
+    name1 <- sub('.', '', name1)
+    name=c(name,name1)
+    #extract sequence between the names
+    #the last sequence will be missed using this strategy 
+    #so, we are using if condition to extract last sequence 
+    start= location[i]+1
+    end = location[i+1]-1
+    if ( i < length (location)){
+      end=end
+    } else {
+      end=length(file1)
+    }
+    lines = start:end
+    sequence1= as.character(paste(file1[lines],collapse = ""))
+    sequence =c(sequence,sequence1)
+  }
+  #now create table using name and sequence vector 
+  data <- tibble::tibble(name,sequence)
+  return(data)
+}
+```
+
+
+## Calculate hydrophobicity (sum of MPEx hydrophobicity scores at each position) for 3 CDR regions for a specific chain
+
+```{r}
+hydrophobicityByChainCDRs <- function(ab.id, anarci.model, mpex.results, ab.aa) {
+  
+  
+  # translate ANARCI model into aa positions
+  model.translated <- anarci.model
+  model.translated[ nrow(model.translated) + 1 , ] <- NA
+  aa.length <- dim(mpex.results) [1]
+  anarci.index <- 14
+  for (i in 1:aa.length) {
+    while (as.character(model.translated[1, anarci.index]) != toupper(as.character(ab.aa[i]))) {
+      anarci.index=anarci.index+1
+    }
+    model.translated[2, anarci.index] <- i
+    anarci.index=anarci.index+1
+  }
+  
+  cdrs.position <- c(model.translated$X27[2], model.translated$X38[2]
+                     , model.translated$X56[2], model.translated$X65[2]
+                     , model.translated$X105[2], model.translated$X117[2])
+  
+  cdr1 <- sum(mpex.results$V2[cdrs.position[1]:cdrs.position[2]])
+  cdr2 <- sum(mpex.results$V2[cdrs.position[3]:cdrs.position[4]])
+  cdr3 <- sum(mpex.results$V2[cdrs.position[5]:cdrs.position[6]])
+  
+  return(c(cdr1, cdr2, cdr3))
+  
+}
+```
+
+# Test function
+```{r, eval=FALSE}
+ab.id <- Ab_IDs[121]
+
+anarci.model <- anarci.heavy[anarci.heavy$Id == ab.id, ]
+mpex.results <- mpex.heavy.ab
+ab.aa <- heavy.ab.aa.vector
+hydrophobicityByChainCDRs(ab.id, anarci.model, mpex.results, ab.aa)
+
+anarci.model <- anarci.light[anarci.light$Id == ab.id, ]
+mpex.results <- mpex.light.ab
+ab.aa <- light.ab.aa.vector
+hydrophobicityByChainCDRs(ab.id, anarci.model, mpex.results, ab.aa)
+```
+
+## FUNCTION 2: generate calculation for 6 CDR regions for a specific Ab
+
+```{r}
+hydrophobicityByCDRs <- function(ab.id, anarci.heavy, anarci.light, mper.results.dir) {
+  
+  mpex.heavy.ab <- read.csv(paste0(mper.results.dir, "/heavy/", ab.id, ".dwif.txt"), sep="\t", header = F)
+  mpex.light.ab <- read.csv(paste0(mper.results.dir, "/light/", ab.id, ".dwif.txt"), sep="\t", header = F)
+  
+  ab.anarci.heavy <- anarci.heavy[anarci.heavy$Id == ab.id, ]
+  ab.anarci.light <- anarci.light[anarci.light$Id == ab.id, ]
+  
+  heavy.ab.aa.vector <- ab.anarci.heavy[1, 14:dim(ab.anarci.heavy)[2]]
+  heavy.ab.aa.vector <- heavy.ab.aa.vector[heavy.ab.aa.vector != "-"]
+  light.ab.aa.vector <- ab.anarci.light[1, 14:dim(ab.anarci.light)[2]]
+  light.ab.aa.vector <- light.ab.aa.vector[light.ab.aa.vector != "-"]
+  
+  heavy.cdrs <- hydrophobicityByChainCDRs(ab.id
+                            , ab.anarci.heavy
+                            , mpex.heavy.ab
+                            , heavy.ab.aa.vector)
+  light.cdrs <- hydrophobicityByChainCDRs(ab.id
+                            , ab.anarci.light
+                            , mpex.light.ab
+                            , light.ab.aa.vector)
+  
+  df <- data.frame(t(c(heavy.cdrs, light.cdrs)))
+  rownames(df) <- ab.id
+  colnames(df) <- c("H1","H2","H3","L1","L2","L3")
+  
+  return(df)
+  
+}
+```
+
+Test function
+```{r, eval = F}
+mper.results.dir =results_dir_4
+ab.id = Ab_IDs[122]
+hydrophobicityByCDRs(ab.id, anarci.heavy, anarci.light, mper.results.dir)
+```
+
+
+# Create vector of Ab IDs
+
+```{r}
+hvtn133.heavy.aa.fasta <- FastaToDF(paste0(results_dir_1, "/HVTN133.heavy.v10.aa.fasta"))
+Ab_IDs <- hvtn133.heavy.aa.fasta$name
+hvtn133.light.aa.fasta <- FastaToDF(paste0(results_dir_1, "/HVTN133.light.v10.aa.fasta"))
+```
+
+# Load ANARCI models
+
+```{r}
+anarci.heavy = read.csv(paste0(results_dir_2, "/HVTN133.heavy.v10.aa.anarci.imgt_H.csv"), header = T, stringsAsFactors = F
+                        , colClasses = "character")
+anarci.light = read.csv(paste0(results_dir_2, "/HVTN133.light.v10.aa.anarci.imgt_KL.csv"), header = T, stringsAsFactors = F
+                        , colClasses = "character")
+```
+
+# APPLY LOOP to calculate hydrophobicity for all CDRs of all Abs
+
+```{r}
+hydrophobicity.abs.cdrs <- as.data.frame(t(sapply(Ab_IDs, hydrophobicityByCDRs, anarci.heavy=anarci.heavy, anarci.light=anarci.light, mper.results.dir=results_dir_4)))
+```
+
+```{r}
+hydrophobicity.abs.cdrs <- t(apply(hydrophobicity.abs.cdrs, 1, unlist))
+```
+
+# Write results
+
+```{r}
+write.csv(hydrophobicity.abs.cdrs, file = paste0(results_dir_6, "/HVTN133_DGwif_values_M66_1_seq_v10_20230213.csv"))
+```
+
+# Info session
+
+```{r}
+writeLines(capture.output(sessionInfo()), paste0(scripts_dir, "/6_7_breakdown_dwif_by_CDR_M66_sessionInfo.txt"))
+```
+
+```{r}
+sessionInfo()
+```
