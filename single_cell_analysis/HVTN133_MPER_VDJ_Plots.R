@@ -107,7 +107,7 @@ all_mper_vgene_counts$VGene_Heavy <- factor(all_mper_vgene_counts$VGene_Heavy, l
 
 all_mper_vgene_counts <- select(all_mper_vgene_counts, VGene_Heavy:PTID)
 
-vhgenes <- c('IGHV1-18', 'IGHV1-69', 'IGHV2-5','IGHV3-7', 'IGHV3-15', 'IGHV3-30-3','IGHV3-49', 'IGHV3-73', 'IGHV5-51', 'IGHV7-4-1')
+vhgenes <- c('IGHV1-69', 'IGHV2-5', 'IGHV3-15', 'IGHV3-30-3','IGHV3-49', 'IGHV3-73', 'IGHV5-51', 'IGHV7-4-1')
 vhgenes <- gsub('IGHV', 'VH', vhgenes)
 
 vh_table_subset <- subset(all_mper_vgene_counts, VGene_Heavy %in% vhgenes)
@@ -137,7 +137,7 @@ h_sub <- ggplot(d2, aes(x = VGene_Heavy, y = freq, fill = PTID2)) + geom_bar(sta
 h_sub
 
 # VK 
-vkgenes <- c('IGKV1-5', 'IGKV1-6',  'IGKV1-9','IGKV1-12', 'IGKV1-16', 'IGKV1-27', 'IGKV1-39', 'IGKV2-28', 'IGKV3-20', 'IGKV4-1')
+vkgenes <- c('IGKV1-6', 'IGKV1-12', 'IGKV1-16', 'IGKV1-27', 'IGKV1-39', 'IGKV2-28', 'IGKV3-20', 'IGKV4-1')
 vkgenes <- gsub('IGKV', 'VK', vkgenes)
 
 vk_table_subset <- subset(vk_table, VGene_Light %in% vkgenes)

@@ -13,12 +13,29 @@ This repository makes available scripts that were used for two downstream analys
 > * [HVTN133](#hvtn133)
 >   * [About](#about)
 >   * [Table of contents](#table-of-contents)
->   * [Installation](#installation)
 >   * [Analysis of 10X Single Cell VDJ sequences](#analysis-of-10x-single-cell-vdj-sequences)
 >   * [Lipid insertion propensity scores](#lipid-insertion-propensity-scores)
 >   * [References](#references)
 
 ## Analysis of 10X Single Cell VDJ sequences
+
+
+### Workflow:
+
+1. CellRanger (v6.0.0) mkfastq was run on each library.
+2. CellRanger vdj and count were run for the immune profiling and gene expression libraries, respectively. 
+3. Immune Profiling (VDJ):
+
+   a. All contigs from CellRanger were filtered for cell calls and high confidence. We also removed contigs with low UMI counts compared to the other contigs in that cell and for that chain type (all_contig_annots_umi_filter.R).
+
+   b. Data was then run through Cloanalyst and functional and productive contigs with one heavy and one light chain were filtered.
+
+   c. Clonal partitioning was then performed for each chain.
+
+   d. The merge_clone_info.R script was then run to combine heavy and light chain immunogenetics and clonal assignments.
+
+   e. Immunogenetic information of interest was then analyzed using the HVTN133_MPER_VDJ_Plots.R and VH7-4-1_Usage_Plot.R scripts.
+4. Gene Expression: data was filtered, integrated, visualized, and analyzed using Seurat.
 
 ## Lipid insertion propensity scores
 
