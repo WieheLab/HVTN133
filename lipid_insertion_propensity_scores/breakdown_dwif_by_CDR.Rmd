@@ -11,17 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Input files are amino acid FASTA files for antibody sequences, ANARCI results for all sequences, and MPEx results parsed using the "parse_MPEx.pl" script.
 
+Test files
 ```{r}
-box_dir <- "~/Library/CloudStorage/Box-Box"
-HVTN133_dir <- "~/Library/CloudStorage/Box-Box/DHVI_Bioinformatics_Team/HVTN133"
-project_dir <- paste0(HVTN133_dir, "/Hydrophobicity")
-scripts_dir <- paste0(project_dir, "/scripts")
-data_dir <- paste0(project_dir, "/data")
-results_dir <- paste0(project_dir, "/results")
-results_dir_1 <- paste0(results_dir, "/1_curated_FASTAs")
-results_dir_2 <- paste0(results_dir, "/2_ANARCI")
-results_dir_4 <- paste0(results_dir, "/4_parse_MPEx")
-results_dir_6 <- paste0(results_dir, "/6_breakdown_dwif_by_CDR")
+test_fasta_file <- "test.fasta"
+test_anarci_file <- "test.anarci.txt"
+test_mpex_file <- "test.mpex.txt"
 ```
 
 INPUT: Ab ID + ANARCI model + MPEx results

@@ -6,6 +6,8 @@
 # - <sequence_name>.residue.txt (every line is a sequence position and the amino acid residue at this position)
 # - <sequence_name>.dwif.txt (every line is a sequence position and the dwif score for the corresponding amino acid)
 
+# Usage: (cd test_data && perl ../parse_MPEx.pl test.aa.fasta test.aa_MPExResults.txt)
+
 if (@ARGV==0){print "$0 [fasta] [MPEx results file]\n"; exit(1);}
 
 open(FILE, $ARGV[0]);
